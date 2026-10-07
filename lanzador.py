@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Instalador de Aplicaciones Debian Testing: ventana que reúne los scripts de
+"""Panel de Configuración: ventana que reúne los scripts de
 configuración del sistema (PyQt6).
 
 Cada botón clona o actualiza el repo del proyecto y ejecuta su script tal cual,
@@ -47,43 +47,52 @@ MODOS = ("auto", "integrado", "gui", "terminal")
 
 # Los colores base salen de la paleta del tema (Plasma claro u oscuro).
 STYLE = """
-QLabel#eyebrow { color: palette(highlight); font-size: 9pt; font-weight: 700; }
-QLabel#titulo { font-size: 30pt; font-weight: 700; }
-QLabel#subtitulo { color: gray; font-size: 12pt; }
-QLabel#pie { color: gray; font-size: 9pt; }
-QLabel#seccion { font-size: 14pt; font-weight: 700; color: palette(highlight); }
-QLabel#nombre { font-size: 12pt; font-weight: 600; }
-QLabel#detalle { color: gray; font-size: 10pt; }
+QLabel#eyebrow { color: palette(highlight); font-size: 9pt; font-weight: 800;
+                 letter-spacing: 1px; }
+QLabel#titulo { font-size: 28pt; font-weight: 750; }
+QLabel#subtitulo { color: palette(mid); font-size: 11pt; }
+QLabel#pie { color: palette(mid); font-size: 9pt; }
+QLabel#seccion { font-size: 14pt; font-weight: 700; }
+QLabel#contador { color: palette(highlight); background: palette(base);
+                  border: 1px solid palette(mid); border-radius: 10px;
+                  padding: 5px 10px; font-size: 9pt; font-weight: 650; }
+QLabel#nombre { font-size: 11pt; font-weight: 650; }
+QLabel#detalle { color: palette(mid); font-size: 9pt; }
 QLabel#accion { font-size: 16pt; font-weight: 700; }
-QLabel#estado { font-size: 11pt; font-weight: 600; }
+QLabel#estado { font-size: 10pt; font-weight: 700; padding: 7px 11px;
+                border-radius: 10px; background: palette(alternate-base); }
 QLabel#estado[estado="run"] { color: palette(highlight); }
 QLabel#estado[estado="ok"] { color: #2ea043; }
 QLabel#estado[estado="error"] { color: #d64545; }
-QFrame#hero { background: palette(base); border: 1px solid palette(mid);
-              border-left: 6px solid palette(highlight); border-radius: 16px; }
-QFrame#tarjeta { background: palette(base); border: 1px solid palette(mid);
-                 border-radius: 14px; }
-QFrame#linea { background: palette(midlight); border: none; }
+QFrame#hero { background: palette(alternate-base); border: 1px solid palette(mid);
+              border-left: 5px solid palette(highlight); border-radius: 18px; }
+QFrame#tarjeta { background: palette(alternate-base); border: 1px solid palette(mid);
+                 border-radius: 16px; }
+QFrame#filaAccion { background: palette(base); border: 1px solid transparent;
+                    border-radius: 12px; }
+QFrame#filaAccion:hover { border-color: palette(mid); }
+QFrame#linea { background: palette(mid); border: none; }
 QScrollArea { border: none; background: transparent; }
 QScrollArea > QWidget > QWidget { background: transparent; }
 QPlainTextEdit#log { background: #14181c; color: #d7dde2;
-                     border: 1px solid palette(mid); border-radius: 12px;
-                     padding: 10px; selection-background-color: palette(highlight); }
-QLineEdit#entrada { min-height: 34px; padding: 0 12px; border-radius: 10px;
-                    border: 2px solid palette(mid); background: palette(base); }
+                      border: 1px solid palette(mid); border-radius: 12px;
+                      padding: 10px; selection-background-color: palette(highlight); }
+QLineEdit#entrada { min-height: 38px; padding: 0 13px; border-radius: 11px;
+                     border: 2px solid palette(mid); background: palette(base); }
 QLineEdit#entrada[atencion="true"] { border-color: palette(highlight); }
-QPushButton { min-width: 130px; min-height: 38px; padding: 0 18px;
-              border-radius: 10px; font-size: 11pt; font-weight: 600;
-              border: 2px solid transparent; }
+QPushButton { min-width: 116px; min-height: 40px; padding: 0 17px;
+              border-radius: 11px; font-size: 10pt; font-weight: 650;
+              border: 1px solid transparent; }
 QPushButton[peligroso="false"] { background: palette(highlight);
-              color: palette(highlighted-text); }
-QPushButton[peligroso="false"]:hover { border-color: palette(highlighted-text); }
+               color: palette(highlighted-text); }
+QPushButton[peligroso="false"]:hover { border-color: palette(text); }
+QPushButton[peligroso="false"]:pressed { background: palette(dark); }
 QPushButton[peligroso="true"] { background: transparent; color: #d64545;
-              border-color: #d64545; }
+               border-color: #d64545; }
 QPushButton[peligroso="true"]:hover { background: #d64545; color: white; }
 QPushButton[peligroso="true"]:disabled { color: palette(mid); border-color: palette(mid); }
 QPushButton#secundario { background: transparent; color: palette(text);
-              border-color: palette(mid); }
+               border-color: palette(mid); }
 QPushButton#secundario:hover { border-color: palette(highlight); }
 QPushButton#secundario:disabled { color: palette(mid); }
 """
@@ -459,9 +468,9 @@ class Launcher(QWidget):
         super().__init__()
         self.base = Path(os.path.expanduser(config["carpeta_proyectos"]))
         self.ctx = None
-        self.setWindowTitle("Instalador de Aplicaciones · Debian Testing")
-        self.setMinimumSize(920, 700)
-        self.resize(1180, 860)
+        self.setWindowTitle("Panel de Configuración")
+        self.setMinimumSize(840, 620)
+        self.resize(1120, 820)
 
         self.runner = PtyRunner(self)
         self.runner.salida.connect(self._salida)
@@ -485,11 +494,11 @@ class Launcher(QWidget):
         hero = QFrame()
         hero.setObjectName("hero")
         hcol = QVBoxLayout(hero)
-        hcol.setContentsMargins(30, 24, 30, 26)
-        hcol.setSpacing(6)
-        eyebrow = QLabel("PANEL DE CONFIGURACIÓN")
+        hcol.setContentsMargins(30, 25, 30, 27)
+        hcol.setSpacing(8)
+        eyebrow = QLabel("CENTRO DE CONTROL")
         eyebrow.setObjectName("eyebrow")
-        titulo = QLabel("Instalador de Aplicaciones\nDebian Testing")
+        titulo = QLabel("Panel de Configuración")
         titulo.setObjectName("titulo")
         subtitulo = QLabel(
             "Elige qué quieres configurar. El progreso, las preguntas, los "
@@ -499,13 +508,13 @@ class Launcher(QWidget):
         subtitulo.setWordWrap(True)
         hcol.addWidget(eyebrow)
         hcol.addWidget(titulo)
-        hcol.addSpacing(4)
+        hcol.addSpacing(2)
         hcol.addWidget(subtitulo)
 
         contenido = QWidget()
         col = QVBoxLayout(contenido)
         col.setContentsMargins(0, 0, 8, 0)
-        col.setSpacing(18)
+        col.setSpacing(14)
         secciones = {}
         for item in config["acciones"]:
             secciones.setdefault(item["seccion"], []).append(item)
@@ -518,14 +527,15 @@ class Launcher(QWidget):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setWidget(contenido)
 
-        pie = QLabel(f"Los proyectos se guardan en {self.base}")
+        pie = QLabel(f"Proyectos locales  ·  {self.base.name}")
         pie.setObjectName("pie")
+        pie.setToolTip(str(self.base))
 
         layout = QVBoxLayout(page)
-        layout.setContentsMargins(36, 30, 36, 22)
-        layout.setSpacing(6)
+        layout.setContentsMargins(32, 26, 32, 20)
+        layout.setSpacing(4)
         layout.addWidget(hero)
-        layout.addSpacing(18)
+        layout.addSpacing(14)
         layout.addWidget(scroll, 1)
         layout.addSpacing(6)
         layout.addWidget(pie)
@@ -535,25 +545,29 @@ class Launcher(QWidget):
         card = QFrame()
         card.setObjectName("tarjeta")
         col = QVBoxLayout(card)
-        col.setContentsMargins(24, 18, 24, 18)
-        col.setSpacing(14)
+        col.setContentsMargins(18, 15, 18, 15)
+        col.setSpacing(8)
         cabecera = QLabel(nombre)
         cabecera.setObjectName("seccion")
-        col.addWidget(cabecera)
-        for i, item in enumerate(items):
-            if i:
-                linea = QFrame()
-                linea.setObjectName("linea")
-                linea.setFixedHeight(1)
-                col.addWidget(linea)
-            col.addLayout(self.build_row(item))
+        contador = QLabel(f"{len(items)} {'acción' if len(items) == 1 else 'acciones'}")
+        contador.setObjectName("contador")
+        encabezado = QHBoxLayout()
+        encabezado.addWidget(cabecera)
+        encabezado.addStretch()
+        encabezado.addWidget(contador)
+        col.addLayout(encabezado)
+        for item in items:
+            col.addWidget(self.build_row(item))
         return card
 
     def build_row(self, item):
-        row = QHBoxLayout()
+        fila = QFrame()
+        fila.setObjectName("filaAccion")
+        row = QHBoxLayout(fila)
+        row.setContentsMargins(13, 11, 11, 11)
         row.setSpacing(16)
         textos = QVBoxLayout()
-        textos.setSpacing(2)
+        textos.setSpacing(4)
         nombre = QLabel(item["titulo"])
         nombre.setObjectName("nombre")
         detalle_txt = item.get("descripcion", "")
@@ -565,12 +579,13 @@ class Launcher(QWidget):
         textos.addWidget(nombre)
         textos.addWidget(detalle)
         boton = QPushButton("▶  Ejecutar")
+        boton.setObjectName("ejecutar")
         boton.setCursor(Qt.CursorShape.PointingHandCursor)
         boton.setProperty("peligroso", "true" if item.get("peligroso") else "false")
         boton.clicked.connect(lambda _=False, it=item: self.run(it))
         row.addLayout(textos, 1)
         row.addWidget(boton, 0, Qt.AlignmentFlag.AlignVCenter)
-        return row
+        return fila
 
     # ------------------------------------------------------------- ejecución
 

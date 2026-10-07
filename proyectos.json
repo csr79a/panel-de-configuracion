@@ -1,30 +1,8 @@
 {
-  "carpeta_proyectos": "~/.local/share/instalador-aplicaciones-debian-testing/proyectos",
+  "carpeta_proyectos": "~/.local/share/panel-de-configuracion/proyectos",
   "acciones": [
     {
-      "seccion": "Base",
-      "titulo": "Corregir repositorios Debian Testing",
-      "descripcion": "Configura los repositorios oficiales de Debian Testing usando el formato moderno deb822.",
-      "repo": "https://github.com/csr79a/debian-testing-setup.git",
-      "script": "repos/corregir-repos-testing.sh"
-    },
-    {
-      "seccion": "Base",
-      "titulo": "Configurar Debian Testing",
-      "descripcion": "Setup inicial del sistema.",
-      "repo": "https://github.com/csr79a/debian-testing-setup.git",
-      "script": "setup/setup-debian-testing.sh"
-    },
-    {
-      "seccion": "Base",
-      "titulo": "Limpiar Debian Testing",
-      "descripcion": "Revierte parte de la configuración base.",
-      "repo": "https://github.com/csr79a/debian-testing-setup.git",
-      "script": "cleanup/cleanup-debian-testing.sh",
-      "peligroso": true
-    },
-    {
-      "seccion": "Base",
+      "seccion": "Sistema",
       "titulo": "Sincronizar repositorios APT",
       "descripcion": "Actualiza la información de los paquetes disponibles en los repositorios configurados (apt update).",
       "repo": "https://github.com/csr79a/debian-testing-setup.git",

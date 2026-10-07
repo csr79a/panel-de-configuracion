@@ -31,11 +31,11 @@ command -v konsole >/dev/null 2>&1 \
 
 APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 mkdir -p "$APPS"
-cat > "$APPS/instalador-aplicaciones-debian-testing.desktop" <<EOF
+cat > "$APPS/panel-de-configuracion.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Instalador de Aplicaciones Debian Testing
-Comment=Instala y configura aplicaciones y componentes de Debian Testing desde un solo panel
+Name=Panel de Configuración
+Comment=Instala y configura aplicaciones y componentes del sistema desde un solo panel
 Exec=python3 "$DIR/lanzador.py"
 Icon=preferences-system
 Terminal=false
@@ -45,4 +45,4 @@ EOF
 command -v update-desktop-database >/dev/null 2>&1 \
     && update-desktop-database "$APPS" || true
 
-echo "Listo: busca «Instalador de Aplicaciones Debian Testing» en el menú de aplicaciones."
+echo "Listo: busca «Panel de Configuración» en el menú de aplicaciones."
