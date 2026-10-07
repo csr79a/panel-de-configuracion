@@ -9,6 +9,21 @@
       "script": "repos/apt-update.sh"
     },
     {
+      "seccion": "Sistema",
+      "titulo": "Actualizar Debian Testing",
+      "descripcion": "Sincroniza los índices y aplica las actualizaciones mediante apt full-upgrade.",
+      "repo": "https://github.com/csr79a/debian-testing-setup.git",
+      "script": "repos/actualizar-testing.sh",
+      "peligroso": true
+    },
+    {
+      "seccion": "Sistema",
+      "titulo": "Limpiar caché APT",
+      "descripcion": "Limpia la caché de paquetes de APT mediante autoclean y clean.",
+      "repo": "https://github.com/csr79a/debian-testing-setup.git",
+      "script": "repos/limpiar-cache-apt.sh"
+    },
+    {
       "seccion": "Gaming",
       "titulo": "Instalar gaming",
       "descripcion": "Steam, ProtonPlus, Heroic, GameMode, MangoHud y ntsync.",

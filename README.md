@@ -32,6 +32,8 @@ python3 ~/panel-de-configuracion/lanzador.py
 | Sección | Acción |
 | --- | --- |
 | Sistema | Sincronizar repositorios APT |
+| Sistema | Actualizar Debian Testing |
+| Sistema | Limpiar caché APT |
 | Gaming | Instalar gaming |
 | Gaming | Limpiar gaming |
 | Rendimiento | Instalar sched-ext |
