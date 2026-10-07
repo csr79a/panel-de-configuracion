@@ -31,7 +31,6 @@ python3 ~/panel-de-configuracion/lanzador.py
 | Sección | Acción |
 | --- | --- |
 | Sistema | Sincronizar repositorios APT |
-| Sistema | Instalar fuentes de Windows |
 | Gaming | Instalar gaming |
 | Gaming | Limpiar gaming |
 | Rendimiento | Instalar sched-ext |
@@ -47,7 +46,6 @@ python3 ~/panel-de-configuracion/lanzador.py
 - lanzador.py — la ventana y la lógica de ejecución.
 - proyectos.json — la lista de proyectos, repos y scripts.
 - instalar-lanzador.sh — crea la entrada en el menú de aplicaciones.
-- scripts/ — scripts propios (por ejemplo, el de fuentes de Windows).
 - MANUAL.md — funcionamiento detallado.
 
 ## Seguridad
