@@ -3,6 +3,7 @@
 Panel gráfico que reúne scripts de configuración del sistema en una sola ventana. Cada botón descarga o actualiza el proyecto desde GitHub y ejecuta su script.
 
 - Ventana hecha con **PyQt6**, con los colores de tu tema de Plasma (claro u oscuro).
+- Interfaz tipo centro de aplicaciones: barra lateral con las secciones, buscador en vivo y tarjetas con icono, descripción, indicador de estado y su botón.
 - El progreso, las preguntas, los avisos y la contraseña de `sudo` aparecen en la misma ventana.
 - No se fuerza `TERM=dumb` en los scripts: ven un terminal interactivo normal.
 - Los cuadros `whiptail` de tipo sí/no y aviso se convierten en preguntas de texto; los scripts con menús o listas se abren en **Konsole**.

@@ -34,67 +34,96 @@ import sys
 import termios
 from pathlib import Path
 
-from PyQt6.QtCore import QObject, Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QFontDatabase, QTextCharFormat, QTextCursor
-from PyQt6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
-                             QLineEdit, QMessageBox, QPlainTextEdit,
-                             QPushButton, QScrollArea, QStackedWidget,
+from PyQt6.QtCore import (QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt,
+                          QTimer, pyqtSignal)
+from PyQt6.QtGui import (QColor, QFontDatabase, QIcon, QTextCharFormat,
+                         QTextCursor)
+from PyQt6.QtWidgets import (QApplication, QFrame, QGraphicsDropShadowEffect,
+                             QGraphicsOpacityEffect, QGridLayout, QHBoxLayout,
+                             QLabel, QLineEdit, QListWidget, QListWidgetItem,
+                             QMessageBox, QPlainTextEdit, QPushButton,
+                             QScrollArea, QSizePolicy, QStackedWidget,
                              QVBoxLayout, QWidget)
 
 CONFIG = Path(__file__).resolve().parent / "proyectos.json"
-LOG_DIR = Path.home() / ".local/share/instalador-aplicaciones-debian-testing/logs"
+LOG_DIR = Path.home() / ".local/share/panel-de-configuracion/logs"
 MODOS = ("auto", "integrado", "gui", "terminal")
+
+# Icono del tema, emoji de reserva y color de acento por sección. Si una
+# sección no aparece aquí se usa el valor por defecto (icono genérico).
+SECCIONES = {
+    "Base":            ("preferences-system", "\u2699", "#4f9cf0"),
+    "Sistema":         ("preferences-system", "\u2699", "#4f9cf0"),
+    "Gaming":          ("applications-games", "\U0001f3ae", "#a06bf0"),
+    "Rendimiento":     ("utilities-system-monitor", "\u26a1", "#f0a83c"),
+    "Gráficos NVIDIA": ("video-display", "\U0001f5a5", "#3dbb76"),
+    "Hardware ASUS":   ("computer", "\U0001f4bb", "#e05a8a"),
+    "Terminal":        ("utilities-terminal", "\u276f", "#39b8c0"),
+}
 
 # Los colores base salen de la paleta del tema (Plasma claro u oscuro).
 STYLE = """
-QLabel#eyebrow { color: palette(highlight); font-size: 9pt; font-weight: 800;
-                 letter-spacing: 1px; }
-QLabel#titulo { font-size: 28pt; font-weight: 750; }
-QLabel#subtitulo { color: palette(mid); font-size: 11pt; }
-QLabel#pie { color: palette(mid); font-size: 9pt; }
-QLabel#seccion { font-size: 14pt; font-weight: 700; }
-QLabel#contador { color: palette(highlight); background: palette(base);
-                  border: 1px solid palette(mid); border-radius: 10px;
-                  padding: 5px 10px; font-size: 9pt; font-weight: 650; }
-QLabel#nombre { font-size: 11pt; font-weight: 650; }
-QLabel#detalle { color: palette(mid); font-size: 9pt; }
+QWidget { font-size: 10.5pt; }
+
+/* ---------- barra lateral ---------- */
+QFrame#sidebar { background: palette(window); border-right: 1px solid palette(mid); }
+QLabel#brand { font-size: 15pt; font-weight: 700; }
+QLabel#brandsub { color: gray; font-size: 9pt; }
+QLineEdit#buscar { min-height: 34px; border-radius: 10px; padding: 0 12px;
+                   border: 1px solid palette(mid); background: palette(base); }
+QLineEdit#buscar:focus { border: 2px solid palette(highlight); }
+QListWidget#secciones { background: transparent; border: none; outline: 0; }
+QListWidget#secciones::item { padding: 9px 10px; border-radius: 10px; margin: 2px 0; }
+QListWidget#secciones::item:hover { background: palette(alternate-base); }
+QListWidget#secciones::item:selected { background: palette(highlight);
+                                        color: palette(highlighted-text); font-weight: 600; }
+QLabel#pagetitle { font-size: 21pt; font-weight: 700; }
+QLabel#pagesub { color: gray; font-size: 10.5pt; }
+QLabel#pie { color: gray; font-size: 9pt; }
+
+/* ---------- tarjetas ---------- */
+QScrollArea { border: none; background: transparent; }
+QScrollArea > QWidget > QWidget { background: transparent; }
+QFrame#tarjeta { background: palette(base); border: 1px solid palette(mid);
+                 border-radius: 16px; }
+QFrame#tarjeta:hover { border: 1px solid palette(highlight); }
+QLabel#nombre { font-size: 12.5pt; font-weight: 700; }
+QLabel#detalle { color: gray; font-size: 10pt; }
+QLabel#chip { font-size: 9pt; font-weight: 600; border-radius: 9px; padding: 3px 10px; }
+QLabel#chip[estado="off"]   { color: #8b949e; background: rgba(139,148,158,0.15); }
+QLabel#chip[estado="run"]   { color: #4f9cf0; background: rgba(79,156,240,0.18); }
+QLabel#chip[estado="ok"]    { color: #2ea043; background: rgba(46,160,67,0.18); }
+QLabel#chip[estado="error"] { color: #d64545; background: rgba(214,69,69,0.18); }
+
+/* ---------- botones ---------- */
+QPushButton { min-width: 118px; min-height: 38px; padding: 0 16px;
+              border-radius: 10px; font-size: 11pt; font-weight: 600;
+              border: 2px solid transparent; }
+QPushButton#primario { background: palette(highlight); color: palette(highlighted-text);
+                       border-radius: 11px; }
+QPushButton#primario:hover { border-color: palette(highlighted-text); }
+QPushButton#primario:pressed { background: palette(dark); }
+QPushButton#quitar { background: transparent; color: #d64545; border: 2px solid #d64545;
+                     border-radius: 11px; }
+QPushButton#quitar:hover { background: #d64545; color: white; }
+QPushButton#quitar:disabled { color: palette(mid); border-color: palette(mid); }
+QPushButton#secundario { background: transparent; color: palette(text);
+              border-color: palette(mid); }
+QPushButton#secundario:hover { border-color: palette(highlight); }
+QPushButton#secundario:disabled { color: palette(mid); }
+
+/* ---------- vista de ejecución ---------- */
 QLabel#accion { font-size: 16pt; font-weight: 700; }
-QLabel#estado { font-size: 10pt; font-weight: 700; padding: 7px 11px;
-                border-radius: 10px; background: palette(alternate-base); }
+QLabel#estado { font-size: 11pt; font-weight: 600; }
 QLabel#estado[estado="run"] { color: palette(highlight); }
 QLabel#estado[estado="ok"] { color: #2ea043; }
 QLabel#estado[estado="error"] { color: #d64545; }
-QFrame#hero { background: palette(alternate-base); border: 1px solid palette(mid);
-              border-left: 5px solid palette(highlight); border-radius: 18px; }
-QFrame#tarjeta { background: palette(alternate-base); border: 1px solid palette(mid);
-                 border-radius: 16px; }
-QFrame#filaAccion { background: palette(base); border: 1px solid transparent;
-                    border-radius: 12px; }
-QFrame#filaAccion:hover { border-color: palette(mid); }
-QFrame#linea { background: palette(mid); border: none; }
-QScrollArea { border: none; background: transparent; }
-QScrollArea > QWidget > QWidget { background: transparent; }
 QPlainTextEdit#log { background: #14181c; color: #d7dde2;
-                      border: 1px solid palette(mid); border-radius: 12px;
-                      padding: 10px; selection-background-color: palette(highlight); }
-QLineEdit#entrada { min-height: 38px; padding: 0 13px; border-radius: 11px;
-                     border: 2px solid palette(mid); background: palette(base); }
+                     border: 1px solid palette(mid); border-radius: 12px;
+                     padding: 10px; selection-background-color: palette(highlight); }
+QLineEdit#entrada { min-height: 34px; padding: 0 12px; border-radius: 10px;
+                    border: 2px solid palette(mid); background: palette(base); }
 QLineEdit#entrada[atencion="true"] { border-color: palette(highlight); }
-QPushButton { min-width: 116px; min-height: 40px; padding: 0 17px;
-              border-radius: 11px; font-size: 10pt; font-weight: 650;
-              border: 1px solid transparent; }
-QPushButton[peligroso="false"] { background: palette(highlight);
-               color: palette(highlighted-text); }
-QPushButton[peligroso="false"]:hover { border-color: palette(text); }
-QPushButton[peligroso="false"]:pressed { background: palette(dark); }
-QPushButton[peligroso="true"] { background: transparent; color: #d64545;
-               border-color: #d64545; }
-QPushButton[peligroso="true"]:hover { background: #d64545; color: white; }
-QPushButton[peligroso="true"]:disabled { color: palette(mid); border-color: palette(mid); }
-QPushButton#secundario { background: transparent; color: palette(text);
-               border-color: palette(mid); }
-QPushButton#secundario:hover { border-color: palette(highlight); }
-QPushButton#secundario:disabled { color: palette(mid); }
 """
 
 # Script de bash fijo: recibe DIR, URL y SCRIPT como $1, $2 y $3 (sin
@@ -122,7 +151,7 @@ DIALOG_RE = re.compile(r"\bdialog\s+--")
 TIPOS_NO_SOPORTADOS_RE = re.compile(
     r"--(menu|checklist|radiolist|inputbox|passwordbox|gauge|textbox|tailbox|fselect)\b")
 
-SHIM_DIR = Path.home() / ".local/share/instalador-aplicaciones-debian-testing/shims"
+SHIM_DIR = Path.home() / ".local/share/panel-de-configuracion/shims"
 
 # whiptail en modo texto. El lanzador lo pone al principio del PATH solo para
 # los scripts que ejecuta dentro de su ventana. Lee y escribe en /dev/tty (el
@@ -199,6 +228,17 @@ def find_terminal():
 
 def repo_name(url):
     return url.rstrip("/").removesuffix(".git").split("/")[-1]
+
+
+def datos_seccion(nombre):
+    """Icono de tema, emoji de reserva y color de acento de una sección."""
+    return SECCIONES.get(nombre, ("application-x-executable", "\u25a3", "#4f9cf0"))
+
+
+def rgba(hexcolor, alpha):
+    """Convierte #RRGGBB a rgba(r,g,b,a); Qt no acepta el formato #RRGGBBAA."""
+    c = QColor(hexcolor)
+    return f"rgba({c.red()},{c.green()},{c.blue()},{alpha})"
 
 
 def entorno():
@@ -463,6 +503,83 @@ class VistaLog(QPlainTextEdit):
             i += 1
 
 
+class TarjetaAccion(QFrame):
+    """Tarjeta de una acción: icono, título, descripción, chip de estado y
+    botón. El botón llama al lanzador con su acción; el chip lo actualiza el
+    lanzador mientras la acción se ejecuta."""
+
+    def __init__(self, item, on_run):
+        super().__init__()
+        self.item = item
+        self.setObjectName("tarjeta")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        tema, emoji, color = datos_seccion(item["seccion"])
+        sombra = QGraphicsDropShadowEffect(self)
+        sombra.setBlurRadius(26)
+        sombra.setOffset(0, 6)
+        sombra.setColor(QColor(0, 0, 0, 45))
+        self.setGraphicsEffect(sombra)
+
+        col = QVBoxLayout(self)
+        col.setContentsMargins(20, 18, 20, 18)
+        col.setSpacing(12)
+
+        cab = QHBoxLayout()
+        cab.setSpacing(12)
+        icono = QLabel()
+        icono.setFixedSize(50, 50)
+        icono.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ico = QIcon.fromTheme(tema)
+        estilo = f"background: {rgba(color, 0.14)}; border-radius: 13px;"
+        if ico.isNull():
+            icono.setText(emoji)
+            estilo += f" color: {color}; font-size: 20pt;"
+        else:
+            icono.setPixmap(ico.pixmap(30, 30))
+        icono.setStyleSheet(estilo)
+        nombre = QLabel(item["titulo"])
+        nombre.setObjectName("nombre")
+        nombre.setWordWrap(True)
+        cab.addWidget(icono, 0, Qt.AlignmentFlag.AlignTop)
+        cab.addWidget(nombre, 1, Qt.AlignmentFlag.AlignVCenter)
+
+        detalle_txt = item.get("descripcion", "")
+        if item.get("modo") == "terminal":
+            detalle_txt += "  ·  Se abre en Konsole."
+        detalle = QLabel(detalle_txt)
+        detalle.setObjectName("detalle")
+        detalle.setWordWrap(True)
+
+        pie = QHBoxLayout()
+        pie.setSpacing(10)
+        self.chip = QLabel()
+        self.chip.setObjectName("chip")
+        self.estado("off", "Sin ejecutar")
+
+        peligroso = bool(item.get("peligroso"))
+        boton = QPushButton("\U0001f5d1  Quitar" if peligroso else "\u25b6  Ejecutar")
+        boton.setObjectName("quitar" if peligroso else "primario")
+        boton.setCursor(Qt.CursorShape.PointingHandCursor)
+        boton.clicked.connect(lambda _=False, it=item: on_run(it))
+        self.boton = boton
+
+        pie.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignVCenter)
+        pie.addStretch(1)
+        pie.addWidget(boton, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        col.addLayout(cab)
+        if detalle_txt:
+            col.addWidget(detalle)
+        col.addStretch(1)
+        col.addLayout(pie)
+
+    def estado(self, tipo, texto):
+        self.chip.setProperty("estado", tipo)
+        self.chip.setText(texto)
+        repolish(self.chip)
+
+
 class Launcher(QWidget):
     def __init__(self, config):
         super().__init__()
@@ -489,103 +606,185 @@ class Launcher(QWidget):
     # ---------------------------------------------------------------- inicio
 
     def _build_home(self, config):
+        self.acciones = config["acciones"]
+        self.tarjetas = []      # [(item, TarjetaAccion), ...]
+        self.visibles = []
         page = QWidget()
+        raiz = QHBoxLayout(page)
+        raiz.setContentsMargins(0, 0, 0, 0)
+        raiz.setSpacing(0)
+        raiz.addWidget(self._build_sidebar())
+        raiz.addWidget(self._build_main(), 1)
+        return page
 
-        hero = QFrame()
-        hero.setObjectName("hero")
-        hcol = QVBoxLayout(hero)
-        hcol.setContentsMargins(30, 25, 30, 27)
-        hcol.setSpacing(8)
-        eyebrow = QLabel("CENTRO DE CONTROL")
-        eyebrow.setObjectName("eyebrow")
-        titulo = QLabel("Panel de Configuración")
-        titulo.setObjectName("titulo")
-        subtitulo = QLabel(
-            "Elige qué quieres configurar. El progreso, las preguntas, los "
-            "avisos y la contraseña de sudo aparecen en esta misma ventana; "
-            "solo los scripts con menús o listas se abren en Konsole.")
-        subtitulo.setObjectName("subtitulo")
-        subtitulo.setWordWrap(True)
-        hcol.addWidget(eyebrow)
-        hcol.addWidget(titulo)
-        hcol.addSpacing(2)
-        hcol.addWidget(subtitulo)
+    def _build_sidebar(self):
+        barra = QFrame()
+        barra.setObjectName("sidebar")
+        barra.setFixedWidth(240)
+        col = QVBoxLayout(barra)
+        col.setContentsMargins(16, 20, 16, 16)
+        col.setSpacing(12)
 
-        contenido = QWidget()
-        col = QVBoxLayout(contenido)
-        col.setContentsMargins(0, 0, 8, 0)
-        col.setSpacing(14)
-        secciones = {}
-        for item in config["acciones"]:
-            secciones.setdefault(item["seccion"], []).append(item)
-        for nombre, items in secciones.items():
-            col.addWidget(self.build_card(nombre, items))
-        col.addStretch()
+        marca = QLabel("\u25c8  Panel de Configuración")
+        marca.setObjectName("brand")
+        marca.setWordWrap(True)
+        sub = QLabel("Debian Testing")
+        sub.setObjectName("brandsub")
+
+        self.buscar = QLineEdit()
+        self.buscar.setObjectName("buscar")
+        self.buscar.setPlaceholderText("\U0001f50d  Buscar acciones\u2026")
+        self.buscar.setClearButtonEnabled(True)
+        self.buscar.textChanged.connect(self.aplicar_filtro)
+
+        self.lista = QListWidget()
+        self.lista.setObjectName("secciones")
+        self.lista.setFrameShape(QFrame.Shape.NoFrame)
+        self.lista.addItem(self._item_seccion("Todas", "view-grid", None))
+        for nombre in self._orden_secciones():
+            tema, emoji, _ = datos_seccion(nombre)
+            self.lista.addItem(self._item_seccion(nombre, tema, emoji))
+        self.lista.setCurrentRow(0)
+        self.lista.currentRowChanged.connect(self.aplicar_filtro)
+
+        pie = QLabel(f"Los proyectos se guardan en {self.base}")
+        pie.setObjectName("pie")
+        pie.setWordWrap(True)
+        pie.setToolTip(str(self.base))
+
+        col.addWidget(marca)
+        col.addWidget(sub)
+        col.addSpacing(6)
+        col.addWidget(self.buscar)
+        col.addSpacing(4)
+        col.addWidget(self.lista, 1)
+        col.addWidget(pie)
+        return barra
+
+    @staticmethod
+    def _item_seccion(nombre, tema, emoji):
+        item = QListWidgetItem(f"  {nombre}")
+        # La sección real se guarda aparte del texto visible (que puede llevar
+        # icono o emoji), para que el filtro no dependa de ellos.
+        item.setData(Qt.ItemDataRole.UserRole, nombre)
+        ico = QIcon.fromTheme(tema)
+        if ico.isNull() and emoji:
+            item.setText(f"  {emoji}  {nombre}")
+        else:
+            item.setIcon(ico)
+        return item
+
+    def _orden_secciones(self):
+        orden = []
+        for item in self.acciones:
+            if item["seccion"] not in orden:
+                orden.append(item["seccion"])
+        return orden
+
+    def _build_main(self):
+        cont = QWidget()
+        col = QVBoxLayout(cont)
+        col.setContentsMargins(28, 24, 28, 12)
+        col.setSpacing(4)
+
+        self.lbl_pagina = QLabel("Todas las acciones")
+        self.lbl_pagina.setObjectName("pagetitle")
+        self.lbl_sub = QLabel("")
+        self.lbl_sub.setObjectName("pagesub")
+        col.addWidget(self.lbl_pagina)
+        col.addWidget(self.lbl_sub)
+        col.addSpacing(12)
+
+        contenedor = QWidget()
+        ccol = QVBoxLayout(contenedor)
+        ccol.setContentsMargins(0, 0, 8, 20)
+        ccol.setSpacing(0)
+        self.grid = QGridLayout()
+        self.grid.setSpacing(18)
+        ccol.addLayout(self.grid)
+        self.vacio = QLabel("No hay acciones que coincidan con la búsqueda.")
+        self.vacio.setObjectName("pagesub")
+        self.vacio.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ccol.addWidget(self.vacio)
+        ccol.addStretch(1)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setWidget(contenido)
+        scroll.setWidget(contenedor)
+        # El layout puede cambiar de ancho sin que cambie el tamaño de la
+        # ventana; escuchamos el viewport para recalcular las columnas.
+        scroll.viewport().installEventFilter(self)
+        self.scroll = scroll
+        col.addWidget(scroll, 1)
 
-        pie = QLabel(f"Proyectos locales  ·  {self.base.name}")
-        pie.setObjectName("pie")
-        pie.setToolTip(str(self.base))
+        for item in self.acciones:
+            self.tarjetas.append((item, TarjetaAccion(item, self.run)))
+        self.aplicar_filtro()
+        return cont
 
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(32, 26, 32, 20)
-        layout.setSpacing(4)
-        layout.addWidget(hero)
-        layout.addSpacing(14)
-        layout.addWidget(scroll, 1)
-        layout.addSpacing(6)
-        layout.addWidget(pie)
-        return page
+    def _seccion_actual(self):
+        fila = self.lista.currentRow()
+        if fila <= 0:
+            return None
+        return self.lista.item(fila).data(Qt.ItemDataRole.UserRole)
 
-    def build_card(self, nombre, items):
-        card = QFrame()
-        card.setObjectName("tarjeta")
-        col = QVBoxLayout(card)
-        col.setContentsMargins(18, 15, 18, 15)
-        col.setSpacing(8)
-        cabecera = QLabel(nombre)
-        cabecera.setObjectName("seccion")
-        contador = QLabel(f"{len(items)} {'acción' if len(items) == 1 else 'acciones'}")
-        contador.setObjectName("contador")
-        encabezado = QHBoxLayout()
-        encabezado.addWidget(cabecera)
-        encabezado.addStretch()
-        encabezado.addWidget(contador)
-        col.addLayout(encabezado)
-        for item in items:
-            col.addWidget(self.build_row(item))
-        return card
+    def aplicar_filtro(self):
+        if not hasattr(self, "grid"):
+            return
+        texto = self.buscar.text().strip().lower()
+        seccion = self._seccion_actual()
+        visibles = []
+        for item, card in self.tarjetas:
+            ok_sec = seccion is None or item["seccion"] == seccion
+            objetivo = (item["titulo"] + " " +
+                        item.get("descripcion", "")).lower()
+            ok_txt = not texto or texto in objetivo
+            visible = ok_sec and ok_txt
+            card.setVisible(visible)
+            if visible:
+                visibles.append(card)
+        self.visibles = visibles
+        self.lbl_pagina.setText(seccion or "Todas las acciones")
+        n = len(visibles)
+        plural = "acción" if n == 1 else "acciones"
+        self.lbl_sub.setText(f"{n} {plural} disponibles")
+        self.vacio.setVisible(n == 0)
+        self._colocar()
 
-    def build_row(self, item):
-        fila = QFrame()
-        fila.setObjectName("filaAccion")
-        row = QHBoxLayout(fila)
-        row.setContentsMargins(13, 11, 11, 11)
-        row.setSpacing(16)
-        textos = QVBoxLayout()
-        textos.setSpacing(4)
-        nombre = QLabel(item["titulo"])
-        nombre.setObjectName("nombre")
-        detalle_txt = item.get("descripcion", "")
-        if item.get("modo") == "terminal":
-            detalle_txt += "  ·  Se abre en Konsole."
-        detalle = QLabel(detalle_txt)
-        detalle.setObjectName("detalle")
-        detalle.setWordWrap(True)
-        textos.addWidget(nombre)
-        textos.addWidget(detalle)
-        boton = QPushButton("▶  Ejecutar")
-        boton.setObjectName("ejecutar")
-        boton.setCursor(Qt.CursorShape.PointingHandCursor)
-        boton.setProperty("peligroso", "true" if item.get("peligroso") else "false")
-        boton.clicked.connect(lambda _=False, it=item: self.run(it))
-        row.addLayout(textos, 1)
-        row.addWidget(boton, 0, Qt.AlignmentFlag.AlignVCenter)
-        return fila
+    def _colocar(self):
+        while self.grid.count():
+            self.grid.takeAt(0)
+        ancho = self.scroll.viewport().width()
+        if ancho < 200:  # antes de que Qt reparta el layout
+            ancho = max(200, self.width() - 240 - 60)
+        cols = max(1, min(4, (ancho + 18) // (280 + 18)))
+        for i, card in enumerate(self.visibles):
+            self.grid.addWidget(card, i // cols, i % cols)
+        for c in range(4):
+            self.grid.setColumnStretch(c, 1 if c < cols else 0)
+
+    def _tarjeta_de(self, item):
+        for it, card in self.tarjetas:
+            if it is item:
+                return card
+        return None
+
+    def _marcar(self, item, tipo, texto):
+        card = self._tarjeta_de(item)
+        if card is not None:
+            card.estado(tipo, texto)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "grid"):
+            self._colocar()
+
+    def eventFilter(self, obj, event):
+        if (hasattr(self, "scroll") and obj is self.scroll.viewport()
+                and event.type() == QEvent.Type.Resize and hasattr(self, "grid")):
+            self._colocar()
+        return super().eventFilter(obj, event)
 
     # ------------------------------------------------------------- ejecución
 
@@ -611,10 +810,10 @@ class Launcher(QWidget):
         self.entrada.setObjectName("entrada")
         self.entrada.returnPressed.connect(self.enviar)
         self.btn_enviar = QPushButton("Enviar")
-        self.btn_enviar.setProperty("peligroso", "false")
+        self.btn_enviar.setObjectName("primario")
         self.btn_enviar.clicked.connect(self.enviar)
         self.btn_cancelar = QPushButton("Cancelar")
-        self.btn_cancelar.setProperty("peligroso", "true")
+        self.btn_cancelar.setObjectName("quitar")
         self.btn_cancelar.clicked.connect(self.cancelar)
 
         fila = QHBoxLayout()
@@ -650,7 +849,9 @@ class Launcher(QWidget):
         if modo not in MODOS:
             modo = "auto"
         if modo == "terminal":
-            self.abrir_terminal(item)
+            ok = self.abrir_terminal(item)
+            self._marcar(item, "ok" if ok else "error",
+                         "Abierto en Konsole" if ok else "Error")
             return
         self.iniciar(item, modo)
 
@@ -674,8 +875,9 @@ class Launcher(QWidget):
         self.log.limpiar()
         self.lbl_accion.setText(item["titulo"])
         self._estado("run", "En ejecución…")
+        self._marcar(item, "run", "En ejecución…")
         self._controles(True)
-        self.stack.setCurrentIndex(1)
+        self._ir_a(1)
         self.log.sistema("▶ Preparando el proyecto (git)…")
         try:
             self.runner.start(["bash", "-c", PREPARAR, "_", str(dest),
@@ -794,8 +996,12 @@ class Launcher(QWidget):
         self._fin(f"La aplicación terminó con código {rc}.", f"✖ Falló (código {rc})")
 
     def _fin(self, mensaje, estado, ok=False):
+        item = self.ctx.get("item") if self.ctx else None
         self.log.sistema(mensaje, color="#7ee787" if ok else "#ff6b6b")
         self._estado("ok" if ok else "error", estado)
+        if item is not None:
+            tipo = "ok" if ok else ("off" if estado == "Cancelado" else "error")
+            self._marcar(item, tipo, estado)
         self._controles(False)
         self.timer_espera.stop()
         self.ctx = None
@@ -858,7 +1064,24 @@ class Launcher(QWidget):
             self.runner.cancelar()
 
     def volver(self):
-        self.stack.setCurrentIndex(0)
+        self._ir_a(0)
+
+    def _ir_a(self, indice):
+        """Cambia de página con un fundido corto. El efecto de opacidad se
+        quita al terminar para que las sombras de las tarjetas vuelvan a
+        dibujarse (Qt no anida efectos gráficos)."""
+        self.stack.setCurrentIndex(indice)
+        pagina = self.stack.currentWidget()
+        efecto = QGraphicsOpacityEffect(pagina)
+        pagina.setGraphicsEffect(efecto)
+        anim = QPropertyAnimation(efecto, b"opacity", self)
+        anim.setDuration(180)
+        anim.setStartValue(0.0)
+        anim.setEndValue(1.0)
+        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        anim.finished.connect(lambda: pagina.setGraphicsEffect(None))
+        self._anim = anim  # mantener referencia mientras corre
+        anim.start()
 
     def closeEvent(self, event):
         if self.runner.activo():

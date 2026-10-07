@@ -2,7 +2,7 @@
 
 ## 1. Qué hace y qué no hace
 
-El panel es una ventana que muestra una lista de acciones agrupadas por secciones. Al pulsar **Ejecutar** en una acción:
+El panel es una ventana que muestra las acciones agrupadas en secciones. Al pulsar **Ejecutar** en una acción:
 
 1. La ventana pasa a la vista de ejecución: un panel de registro, un campo de respuesta y el botón **Cancelar**.
 2. Si el proyecto no está descargado, lo clona con `git clone`. Si ya está, ejecuta `git pull --ff-only`.
@@ -11,6 +11,10 @@ El panel es una ventana que muestra una lista de acciones agrupadas por seccione
 5. Al terminar muestra el resultado (completado, falló con su código o cancelado).
 
 El panel no modifica los scripts descargados y no ejecuta nada como root por su cuenta. Se niega a arrancar si lo lanzas como root.
+
+La ventana tiene dos zonas: a la izquierda, una barra con el buscador y la lista de secciones (Sistema, Gaming, Rendimiento, Gráficos NVIDIA, Hardware ASUS, Terminal); a la derecha, las acciones en tarjetas. El buscador filtra por título y descripción, y al hacer clic en una sección se muestran solo sus acciones.
+
+Cada tarjeta muestra su icono, la descripción y un indicador de estado que va cambiando: **Sin ejecutar**, **En ejecución…**, **Completado**, **Falló** o **Cancelado**. Los iconos y colores de cada sección se definen en el mapa `SECCIONES` de `lanzador.py`.
 
 ## 2. Modos de ejecución
 
