@@ -14,14 +14,17 @@
       "descripcion": "Sincroniza los índices y aplica las actualizaciones mediante apt full-upgrade.",
       "repo": "https://github.com/csr79a/debian-testing-setup.git",
       "script": "repos/actualizar-testing.sh",
-      "peligroso": true
+      "peligroso": true,
+      "etiqueta": "Actualizar",
+      "aviso": "«Actualizar Debian Testing» ejecuta apt full-upgrade, que puede instalar, actualizar o eliminar paquetes para resolver dependencias."
     },
     {
       "seccion": "Sistema",
       "titulo": "Limpiar caché APT",
       "descripcion": "Limpia la caché de paquetes de APT mediante autoclean y clean.",
       "repo": "https://github.com/csr79a/debian-testing-setup.git",
-      "script": "repos/limpiar-cache-apt.sh"
+      "script": "repos/limpiar-cache-apt.sh",
+      "etiqueta": "Limpiar"
     },
     {
       "seccion": "Gaming",

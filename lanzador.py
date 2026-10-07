@@ -558,7 +558,9 @@ class TarjetaAccion(QFrame):
         self.estado("off", "Sin ejecutar")
 
         peligroso = bool(item.get("peligroso"))
-        boton = QPushButton("\U0001f5d1  Quitar" if peligroso else "\u25b6  Ejecutar")
+        texto = (item.get("etiqueta")
+                 or ("\U0001f5d1  Quitar" if peligroso else "\u25b6  Ejecutar"))
+        boton = QPushButton(texto)
         boton.setObjectName("quitar" if peligroso else "primario")
         boton.setCursor(Qt.CursorShape.PointingHandCursor)
         boton.clicked.connect(lambda _=False, it=item: on_run(it))
@@ -839,10 +841,10 @@ class Launcher(QWidget):
         if self.runner.activo():
             return
         if item.get("peligroso"):
+            aviso = item.get("aviso") or (
+                f"«{item['titulo']}» puede eliminar paquetes y archivos.")
             answer = QMessageBox.question(
-                self, "Confirmar",
-                f"«{item['titulo']}» puede eliminar paquetes y archivos.\n\n"
-                "¿Ejecutarlo?")
+                self, "Confirmar", f"{aviso}\n\n¿Ejecutarlo?")
             if answer != QMessageBox.StandardButton.Yes:
                 return
         modo = item.get("modo", "auto")
